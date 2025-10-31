@@ -1,0 +1,54 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.0] - 2025-11-01
+
+### Added
+
+- Initial release of V4-link bytecode transfer layer
+- Minimal frame-based protocol for UART communication
+- CRC-8 error detection (polynomial 0x07)
+- Three core commands: EXEC, PING, RESET
+- Platform-agnostic design using callback-based UART abstraction
+- C++ API (`v4link::Link` class) with modern C++17 features
+- C API (`v4link_*` functions) for C-compatible integration
+- State machine for byte-by-byte frame reception
+- Automatic bytecode registration and execution in V4 VM
+- Comprehensive test suite using doctest
+- CMake build system with V4 VM integration
+- Error codes defined via `.def` file (V4-style)
+- Memory-efficient design (~1.5KB Flash, ~512B RAM typical)
+- Zero runtime allocation (memory allocated only during initialization)
+- No exceptions, no RTTI (embedded-friendly)
+- Documentation and usage examples in README.md
+- MIT + Apache-2.0 dual licensing
+
+### Protocol Specification
+
+- Frame format: `[STX][LEN_L][LEN_H][CMD][DATA...][CRC8]`
+- Maximum payload size: 512 bytes (configurable)
+- Commands:
+  - `0x10 EXEC`: Execute bytecode immediately
+  - `0x20 PING`: Connection check
+  - `0xFF RESET`: Full VM reset
+- Response codes:
+  - `0x00 OK`: Success
+  - `0x01 ERROR`: General error
+  - `0x02 INVALID_FRAME`: CRC mismatch
+  - `0x03 BUFFER_FULL`: Payload too large
+  - `0x04 VM_ERROR`: VM execution error
+
+### Target Platforms
+
+- Primary: CH32V203 (RISC-V, 64KB Flash, 20KB RAM)
+- Secondary: ESP32-C6 (RISC-V, 4MB Flash, 512KB RAM)
+- Host: POSIX systems (Linux, macOS) for testing
+
+[Unreleased]: https://github.com/V4-project/V4-link/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/V4-project/V4-link/releases/tag/v0.1.0

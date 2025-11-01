@@ -162,7 +162,13 @@ void Link::handle_cmd_exec()
   }
   else
   {
-    send_ack(ErrorCode::OK);
+    // Send success response with word index
+    // Response payload: [WORD_COUNT][WORD_IDX_L][WORD_IDX_H]
+    uint8_t response_data[3];
+    response_data[0] = 1;  // WORD_COUNT = 1 (always 1 for single bytecode execution)
+    response_data[1] = static_cast<uint8_t>(wid & 0xFF);         // WORD_IDX_L
+    response_data[2] = static_cast<uint8_t>((wid >> 8) & 0xFF);  // WORD_IDX_H
+    send_ack(ErrorCode::OK, response_data, sizeof(response_data));
   }
 }
 
@@ -177,10 +183,10 @@ void Link::handle_cmd_reset()
   send_ack(ErrorCode::OK);
 }
 
-void Link::send_ack(ErrorCode code)
+void Link::send_ack(ErrorCode code, const uint8_t* data, size_t data_len)
 {
   std::vector<uint8_t> ack_frame;
-  internal::encode_ack(code, ack_frame);
+  internal::encode_ack(code, ack_frame, data, data_len);
   uart_write_(ack_frame.data(), ack_frame.size());
 }
 

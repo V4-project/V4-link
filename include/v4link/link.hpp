@@ -127,9 +127,11 @@ class Link
   /**
    * @brief Send ACK/NAK response
    *
-   * @param code Error code to send
+   * @param code     Error code to send
+   * @param data     Optional payload data (nullptr for standard response)
+   * @param data_len Payload length in bytes (0 for standard response)
    */
-  void send_ack(ErrorCode code);
+  void send_ack(ErrorCode code, const uint8_t* data = nullptr, size_t data_len = 0);
 
   /**
    * @brief Handle CMD_EXEC command

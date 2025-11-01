@@ -114,8 +114,8 @@ TEST_CASE("ACK frame encoding")
 
   REQUIRE(frame.size() == 5);
   CHECK(frame[0] == STX);
-  CHECK(frame[1] == 0x00);  // LEN_L
-  CHECK(frame[2] == 0x01);  // LEN_H (payload = 1 byte)
+  CHECK(frame[1] == 0x01);  // LEN_L (payload = 1 byte, little-endian)
+  CHECK(frame[2] == 0x00);  // LEN_H
   CHECK(frame[3] == static_cast<uint8_t>(ErrorCode::OK));
   // frame[4] is CRC
 }
@@ -236,9 +236,16 @@ TEST_CASE("Link basic functionality")
       link.feed_byte(byte);
     }
 
-    // Should receive ACK with OK
-    REQUIRE(uart_output.size() == 5);
+    // Should receive ACK with OK and word index
+    // Response: [STX][0x04][0x00][ERR_OK][WORD_COUNT=1][WORD_IDX_L][WORD_IDX_H][CRC]
+    REQUIRE(uart_output.size() == 8);
+    CHECK(uart_output[0] == STX);
+    CHECK(uart_output[1] == 0x04);  // LEN_L = 4 (ERR + WORD_COUNT + WORD_IDX)
+    CHECK(uart_output[2] == 0x00);  // LEN_H
     CHECK(uart_output[3] == static_cast<uint8_t>(ErrorCode::OK));
+    CHECK(uart_output[4] == 1);  // WORD_COUNT = 1
+    // uart_output[5], [6] are WORD_IDX (depends on VM state)
+    // uart_output[7] is CRC
 
     // Check if value was pushed to stack
     CHECK(vm_ds_depth_public(vm) == 1);

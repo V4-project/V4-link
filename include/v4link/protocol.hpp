@@ -125,13 +125,28 @@ enum class ErrorCode : uint8_t
 /**
  * @brief Response frame format
  *
+ * Standard response (PING, RESET):
  * [STX][0x01][0x00][ERR_CODE][CRC8]
  *
- * Response frames always have a fixed length of 5 bytes:
  * - STX: 0xA5
  * - LEN: 0x0001 (1 byte payload, little-endian: LEN_L=0x01, LEN_H=0x00)
  * - ERR_CODE: 1 byte from ErrorCode enum
  * - CRC8: Checksum of [0x01][0x00][ERR_CODE]
+ *
+ * EXEC response (variable-length, includes registered word indices):
+ * [STX][LEN_L][LEN_H][ERR_CODE][WORD_COUNT][WORD_IDX_0_L][WORD_IDX_0_H]...[CRC8]
+ *
+ * - STX: 0xA5
+ * - LEN: 2 + WORD_COUNT * 2 (little-endian u16)
+ * - ERR_CODE: 1 byte from ErrorCode enum
+ * - WORD_COUNT: 1 byte, number of words registered (0-255)
+ * - WORD_IDX: 2 bytes × WORD_COUNT, little-endian word indices
+ * - CRC8: Checksum of [LEN_L][LEN_H][ERR_CODE][WORD_COUNT][WORD_IDX...]
+ *
+ * Examples:
+ * - No word definitions (e.g., "1 2 +"): [STX][02][00][00][00][CRC] (LEN=2, count=0)
+ * - 1 word (e.g., ": sq dup * ;"): [STX][04][00][00][01][idx_L][idx_H][CRC] (LEN=4)
+ * - 2 words: [STX][06][00][00][02][idx0_L][idx0_H][idx1_L][idx1_H][CRC] (LEN=6)
  */
 
 }  // namespace link

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING**: Extended EXEC response to include registered word index for REPL support
+  - Old format: `[STX][0x01][0x00][ERR_CODE][CRC8]` (5 bytes)
+  - New format: `[STX][LEN_L][LEN_H][ERR_CODE][WORD_COUNT][WORD_IDX...][CRC8]` (variable length)
+  - LEN = 2 + WORD_COUNT * 2
+  - WORD_COUNT: Number of words registered (always 1 for single bytecode execution)
+  - WORD_IDX: 16-bit little-endian word index for each registered word
+  - This enables host-side REPL compilers to track word definitions registered on device VM
+  - Updated tests to reflect new response format
+
 ## [0.1.1] - 2025-11-01
 
 ### Fixed

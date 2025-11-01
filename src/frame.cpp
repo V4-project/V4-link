@@ -50,19 +50,29 @@ bool encode_frame(Command cmd, const uint8_t* data, size_t len, std::vector<uint
   return true;
 }
 
-void encode_ack(ErrorCode err_code, std::vector<uint8_t>& out)
+void encode_ack(ErrorCode err_code, std::vector<uint8_t>& out, const uint8_t* data,
+                size_t data_len)
 {
-  out.clear();
-  out.reserve(5);
+  // Calculate payload length: ERR_CODE (1) + optional data
+  const size_t payload_len = 1 + data_len;
 
-  // Response frame: [STX][0x01][0x00][ERR_CODE][CRC8]
+  out.clear();
+  out.reserve(5 + data_len);
+
+  // Response frame: [STX][LEN_L][LEN_H][ERR_CODE][DATA...][CRC8]
   out.push_back(STX);
-  out.push_back(0x01);  // LEN_L = 1 (low byte of length)
-  out.push_back(0x00);  // LEN_H = 0 (high byte of length, total = 1)
+  out.push_back(static_cast<uint8_t>(payload_len & 0xFF));         // LEN_L
+  out.push_back(static_cast<uint8_t>((payload_len >> 8) & 0xFF));  // LEN_H
   out.push_back(static_cast<uint8_t>(err_code));
 
-  // Calculate CRC over [0x01][0x00][ERR_CODE]
-  const uint8_t crc = calc_crc8(&out[1], 3);
+  // Append optional data
+  if (data_len > 0 && data != nullptr)
+  {
+    out.insert(out.end(), data, data + data_len);
+  }
+
+  // Calculate CRC over [LEN_L][LEN_H][ERR_CODE][DATA...]
+  const uint8_t crc = calc_crc8(&out[1], out.size() - 1);
   out.push_back(crc);
 }
 

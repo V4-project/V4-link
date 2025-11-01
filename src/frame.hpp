@@ -38,12 +38,16 @@ bool encode_frame(Command cmd, const uint8_t* data, size_t len,
 /**
  * @brief Encode an ACK/NAK response frame
  *
- * Generates a response frame: [STX][0x00][0x01][ERR_CODE][CRC8]
+ * Standard response: [STX][0x01][0x00][ERR_CODE][CRC8]
+ * With payload: [STX][LEN_L][LEN_H][ERR_CODE][DATA...][CRC8]
  *
  * @param err_code Error code to send
  * @param out      Output buffer for encoded frame
+ * @param data     Optional payload data (nullptr for standard response)
+ * @param data_len Payload length in bytes (0 for standard response)
  */
-void encode_ack(ErrorCode err_code, std::vector<uint8_t>& out);
+void encode_ack(ErrorCode err_code, std::vector<uint8_t>& out,
+                const uint8_t* data = nullptr, size_t data_len = 0);
 
 /**
  * @brief Verify frame CRC

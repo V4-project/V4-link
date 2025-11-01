@@ -156,6 +156,9 @@ class Link
   State state_;         ///< State machine state
   uint16_t frame_len_;  ///< Expected payload length
   uint8_t cmd_;         ///< Current command code
+
+  std::vector<std::vector<uint8_t>>
+      bytecode_storage_;  ///< Persistent bytecode storage for registered words
 };
 
 }  // namespace link

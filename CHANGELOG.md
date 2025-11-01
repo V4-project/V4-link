@@ -18,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - This enables host-side REPL compilers to track word definitions registered on device VM
   - Updated tests to reflect new response format
 
+### Fixed
+
+- Fixed critical bug where bytecode pointers became invalid after frame processing
+  - `vm_register_word` stores bytecode pointer without copying, requiring persistent storage
+  - Added `bytecode_storage_` vector to maintain bytecode lifetime for registered words
+  - Bytecode storage is cleared on VM reset to prevent memory leaks
+  - This fix enables REPL word definitions to work correctly
+
 ## [0.1.1] - 2025-11-01
 
 ### Fixed

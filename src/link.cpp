@@ -135,12 +135,19 @@ void Link::handle_cmd_exec()
   const uint8_t* bytecode = buffer_.data() + 4;
   const size_t bytecode_len = frame_len_;
 
+  // Copy bytecode to persistent storage (VM stores pointer, doesn't copy)
+  std::vector<uint8_t> bytecode_copy(bytecode, bytecode + bytecode_len);
+  bytecode_storage_.push_back(std::move(bytecode_copy));
+  const uint8_t* persistent_bytecode = bytecode_storage_.back().data();
+
   // Register bytecode as anonymous word
   const int wid =
-      vm_register_word(vm_, nullptr, bytecode, static_cast<int>(bytecode_len));
+      vm_register_word(vm_, nullptr, persistent_bytecode, static_cast<int>(bytecode_len));
 
   if (wid < 0)
   {
+    // Registration failed, remove the bytecode copy
+    bytecode_storage_.pop_back();
     send_ack(ErrorCode::VM_ERROR);
     return;
   }
@@ -180,6 +187,7 @@ void Link::handle_cmd_ping()
 void Link::handle_cmd_reset()
 {
   vm_reset(vm_);
+  bytecode_storage_.clear();  // Free all allocated bytecode
   send_ack(ErrorCode::OK);
 }
 

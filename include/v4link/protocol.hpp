@@ -125,13 +125,13 @@ enum class ErrorCode : uint8_t
 /**
  * @brief Response frame format
  *
- * [STX][0x00][0x01][ERR_CODE][CRC8]
+ * [STX][0x01][0x00][ERR_CODE][CRC8]
  *
  * Response frames always have a fixed length of 5 bytes:
  * - STX: 0xA5
- * - LEN: 0x0001 (1 byte payload, little-endian)
+ * - LEN: 0x0001 (1 byte payload, little-endian: LEN_L=0x01, LEN_H=0x00)
  * - ERR_CODE: 1 byte from ErrorCode enum
- * - CRC8: Checksum of [0x00][0x01][ERR_CODE]
+ * - CRC8: Checksum of [0x01][0x00][ERR_CODE]
  */
 
 }  // namespace link

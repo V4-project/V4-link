@@ -55,13 +55,13 @@ void encode_ack(ErrorCode err_code, std::vector<uint8_t>& out)
   out.clear();
   out.reserve(5);
 
-  // Response frame: [STX][0x00][0x01][ERR_CODE][CRC8]
+  // Response frame: [STX][0x01][0x00][ERR_CODE][CRC8]
   out.push_back(STX);
-  out.push_back(0x00);  // LEN_L = 0
-  out.push_back(0x01);  // LEN_H = 0 (total length = 1)
+  out.push_back(0x01);  // LEN_L = 1 (low byte of length)
+  out.push_back(0x00);  // LEN_H = 0 (high byte of length, total = 1)
   out.push_back(static_cast<uint8_t>(err_code));
 
-  // Calculate CRC over [0x00][0x01][ERR_CODE]
+  // Calculate CRC over [0x01][0x00][ERR_CODE]
   const uint8_t crc = calc_crc8(&out[1], 3);
   out.push_back(crc);
 }

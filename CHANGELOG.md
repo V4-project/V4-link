@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-11-01
+
 ### Fixed
 
 - Corrected response frame encoding documentation to accurately reflect little-endian byte order
@@ -54,5 +56,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secondary: ESP32-C6 (RISC-V, 4MB Flash, 512KB RAM)
 - Host: POSIX systems (Linux, macOS) for testing
 
-[Unreleased]: https://github.com/V4-project/V4-link/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/V4-project/V4-link/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/V4-project/V4-link/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/V4-project/V4-link/releases/tag/v0.1.0

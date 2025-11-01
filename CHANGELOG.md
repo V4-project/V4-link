@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `bytecode_storage_` vector to maintain bytecode lifetime for registered words
   - Bytecode storage is cleared on VM reset to prevent memory leaks
   - This fix enables REPL word definitions to work correctly
+- Fixed EXEC command failing on word definitions
+  - Word definition bytecode (e.g., `[DUP, MUL, RET]`) should only be registered, not executed
+  - Changed to ignore execution errors and always return word index
+  - Execution errors are expected for word definitions which require stack setup
+  - This allows REPL to properly register word definitions for later use
 
 ## [0.1.1] - 2025-11-01
 

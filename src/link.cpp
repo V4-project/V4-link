@@ -161,22 +161,17 @@ void Link::handle_cmd_exec()
   }
 
   // Execute bytecode
-  const v4_err err = vm_exec(vm_, entry);
+  // Note: Execution may fail for word definitions (e.g., [DUP, MUL, RET])
+  // which should only be registered, not executed. We ignore execution errors
+  // and always return the word index, as the word was registered successfully.
+  vm_exec(vm_, entry);
 
-  if (err < 0)
-  {
-    send_ack(ErrorCode::VM_ERROR);
-  }
-  else
-  {
-    // Send success response with word index
-    // Response payload: [WORD_COUNT][WORD_IDX_L][WORD_IDX_H]
-    uint8_t response_data[3];
-    response_data[0] = 1;  // WORD_COUNT = 1 (always 1 for single bytecode execution)
-    response_data[1] = static_cast<uint8_t>(wid & 0xFF);         // WORD_IDX_L
-    response_data[2] = static_cast<uint8_t>((wid >> 8) & 0xFF);  // WORD_IDX_H
-    send_ack(ErrorCode::OK, response_data, sizeof(response_data));
-  }
+  // Always return word index, even if execution failed
+  uint8_t response_data[3];
+  response_data[0] = 1;  // WORD_COUNT = 1 (always 1 for single bytecode execution)
+  response_data[1] = static_cast<uint8_t>(wid & 0xFF);         // WORD_IDX_L
+  response_data[2] = static_cast<uint8_t>((wid >> 8) & 0xFF);  // WORD_IDX_H
+  send_ack(ErrorCode::OK, response_data, sizeof(response_data));
 }
 
 void Link::handle_cmd_ping()

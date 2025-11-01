@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-11-02
+
 ### Changed
 
 - **BREAKING**: Extended EXEC response to include registered word index for REPL support
@@ -80,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secondary: ESP32-C6 (RISC-V, 4MB Flash, 512KB RAM)
 - Host: POSIX systems (Linux, macOS) for testing
 
-[Unreleased]: https://github.com/V4-project/V4-link/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/V4-project/V4-link/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/V4-project/V4-link/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/V4-project/V4-link/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/V4-project/V4-link/releases/tag/v0.1.0

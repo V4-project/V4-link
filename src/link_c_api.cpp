@@ -28,22 +28,23 @@ struct V4Link
   V4Link(Vm* vm, v4link_uart_write_fn write_fn, void* user_ctx, size_t buffer_size)
       : cpp_link(nullptr), user(user_ctx), uart_write(write_fn)
   {
-    // Create C++ Link with lambda that wraps the C callback
-    cpp_link = new (std::nothrow) Link(
-        vm,
-        [this](const uint8_t* data, size_t len)
-        {
-          if (uart_write)
-          {
-            uart_write(user, data, len);
-          }
-        },
-        buffer_size);
+    // Create C++ Link with wrapper function that forwards to C callback
+    cpp_link = new (std::nothrow) Link(vm, uart_write_wrapper, this, buffer_size);
   }
 
   ~V4Link()
   {
     delete cpp_link;
+  }
+
+  // Static wrapper function that forwards to C callback
+  static void uart_write_wrapper(void* context, const uint8_t* data, size_t len)
+  {
+    V4Link* self = static_cast<V4Link*>(context);
+    if (self && self->uart_write)
+    {
+      self->uart_write(self->user, data, len);
+    }
   }
 };
 

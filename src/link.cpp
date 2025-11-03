@@ -16,9 +16,10 @@ namespace v4
 namespace link
 {
 
-Link::Link(Vm* vm, UartWriteFn uart_write, size_t buffer_size)
+Link::Link(Vm* vm, UartWriteFn uart_write, void* user, size_t buffer_size)
     : vm_(vm),
       uart_write_(uart_write),
+      user_context_(user),
       buffer_(),
       pos_(0),
       state_(State::WAIT_STX),
@@ -190,7 +191,7 @@ void Link::send_ack(ErrorCode code, const uint8_t* data, size_t data_len)
 {
   std::vector<uint8_t> ack_frame;
   internal::encode_ack(code, ack_frame, data, data_len);
-  uart_write_(ack_frame.data(), ack_frame.size());
+  uart_write_(user_context_, ack_frame.data(), ack_frame.size());
 }
 
 void Link::reset()

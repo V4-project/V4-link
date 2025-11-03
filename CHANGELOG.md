@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added minimal binary size test program (`tests/minimal_binary.cpp`)
+  - Measures actual embedded binary size without test framework overhead
+  - Integrated into `make size` target with detailed size breakdown
+  - Shows binary composition (text, data, bss sections)
+
+### Changed
+
+- **BREAKING**: Changed `UartWriteFn` callback signature to use C-style function pointer
+  - Old: `std::function<void(const uint8_t*, size_t)>`
+  - New: `void (*)(void* user, const uint8_t*, size_t)`
+  - Added user context pointer parameter for better C interoperability
+  - Removed `<functional>` header dependency
+  - Reduces binary size by ~900 bytes
+- Updated `Link` constructor to accept user context parameter
+  - Signature: `Link(Vm* vm, UartWriteFn uart_write, void* user = nullptr, size_t buffer_size = MAX_PAYLOAD_SIZE)`
+  - User context is passed to callback on each invocation
+
+### Improved
+
+- Enabled Link Time Optimization (LTO) by default in `make size` target
+  - Fixed LTO detection to properly specify C/CXX languages in CMake
+  - Enabled LTO for V4 VM, mock_hal, and V4-link libraries
+  - Reduces minimal binary from 23.6KB to 17.3KB (26.7% reduction)
+  - Binary size breakdown with LTO enabled:
+    - text: 13,887 bytes (code)
+    - data: 680 bytes (initialized data)
+    - bss: 3,136 bytes (uninitialized data)
+
 ## [0.2.0] - 2025-11-02
 
 ### Changed

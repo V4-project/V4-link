@@ -13,11 +13,12 @@
 #include "v4/vm_api.h"
 #include "v4link/link.hpp"
 
-// Minimal UART write function
-static void uart_write(const uint8_t* data, size_t len)
+// Minimal UART write function (C-style function pointer for minimal size)
+static void uart_write(void* user, const uint8_t* data, size_t len)
 {
   // In a real embedded system, this would write to UART hardware
   // For this minimal binary, we just ignore the output
+  (void)user;
   (void)data;
   (void)len;
 }
@@ -34,8 +35,8 @@ int main()
     return 1;
   }
 
-  // Create link instance
-  v4::link::Link link(vm, uart_write);
+  // Create link instance (nullptr for user context)
+  v4::link::Link link(vm, uart_write, nullptr);
 
   // Process a single PING command frame
   // Frame format: [STX][LEN_L][LEN_H][CMD][CRC]

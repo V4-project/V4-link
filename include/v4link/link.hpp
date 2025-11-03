@@ -13,7 +13,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <vector>
 
 #include "v4/vm_api.h"
@@ -36,10 +35,13 @@ namespace link
  * VmConfig cfg = {mem, sizeof(mem), nullptr, 0, nullptr};
  * Vm* vm = vm_create(&cfg);
  *
+ * // Define UART write callback
+ * void uart_write_fn(void* user, const uint8_t* data, size_t len) {
+ *   uart_send(data, len);  // Platform-specific UART send
+ * }
+ *
  * // Create Link with UART callback
- * Link link(vm, [](const uint8_t* data, size_t len) {
- *   uart_send(data, len);
- * });
+ * Link link(vm, uart_write_fn, nullptr);
  *
  * // Main loop: feed incoming UART bytes
  * while (true) {
@@ -59,19 +61,22 @@ class Link
    * User-provided function to send data over UART.
    * Must be non-blocking or have minimal blocking time.
    *
+   * @param user User context pointer passed during construction
    * @param data Pointer to data buffer
    * @param len  Number of bytes to write
    */
-  using UartWriteFn = std::function<void(const uint8_t*, size_t)>;
+  using UartWriteFn = void (*)(void* user, const uint8_t*, size_t);
 
   /**
    * @brief Construct Link instance
    *
    * @param vm           Pointer to initialized V4 VM instance
    * @param uart_write   Callback function for UART transmission
+   * @param user         User context pointer passed to callback (can be nullptr)
    * @param buffer_size  Maximum bytecode buffer size (default: 512 bytes)
    */
-  Link(Vm* vm, UartWriteFn uart_write, size_t buffer_size = MAX_PAYLOAD_SIZE);
+  Link(Vm* vm, UartWriteFn uart_write, void* user = nullptr,
+       size_t buffer_size = MAX_PAYLOAD_SIZE);
 
   /**
    * @brief Process one received byte
@@ -150,6 +155,7 @@ class Link
 
   Vm* vm_;                       ///< V4 VM instance
   UartWriteFn uart_write_;       ///< UART write callback
+  void* user_context_;           ///< User context for callback
   std::vector<uint8_t> buffer_;  ///< Frame reception buffer
   size_t pos_;                   ///< Current position in buffer
 

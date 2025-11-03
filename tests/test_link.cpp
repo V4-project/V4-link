@@ -155,6 +155,13 @@ TEST_CASE("Frame CRC verification")
 /* Link Class Tests                                                          */
 /* ========================================================================= */
 
+// Helper callback for tests
+static void test_uart_write(void* user, const uint8_t* data, size_t len)
+{
+  auto* output = static_cast<std::vector<uint8_t>*>(user);
+  output->insert(output->end(), data, data + len);
+}
+
 TEST_CASE("Link basic functionality")
 {
   // Create VM
@@ -165,10 +172,8 @@ TEST_CASE("Link basic functionality")
 
   // Track UART output
   std::vector<uint8_t> uart_output;
-  auto uart_write = [&uart_output](const uint8_t* data, size_t len)
-  { uart_output.insert(uart_output.end(), data, data + len); };
 
-  Link link(vm, uart_write);
+  Link link(vm, test_uart_write, &uart_output);
 
   SUBCASE("PING command")
   {
@@ -306,10 +311,8 @@ TEST_CASE("Link state machine robustness")
   REQUIRE(vm != nullptr);
 
   std::vector<uint8_t> uart_output;
-  auto uart_write = [&uart_output](const uint8_t* data, size_t len)
-  { uart_output.insert(uart_output.end(), data, data + len); };
 
-  Link link(vm, uart_write);
+  Link link(vm, test_uart_write, &uart_output);
 
   SUBCASE("Garbage before valid frame")
   {

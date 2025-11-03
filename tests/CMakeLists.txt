@@ -40,8 +40,7 @@ add_test(NAME v4link_test COMMAND v4link_test)
 # ============================================================================
 
 # This minimal executable contains only the essential V4-link code without test
-# frameworks, allowing us to measure the actual minimum binary size for embedded
-# systems.
+# frameworks, allowing us to measure the actual minimum binary size for embedded systems.
 add_executable(v4link_minimal minimal_binary.cpp)
 
 # Link only the required libraries (no doctest)
@@ -58,7 +57,10 @@ endif()
 # Enable LTO for minimal binary if requested
 if(V4LINK_ENABLE_LTO)
   include(CheckIPOSupported)
-  check_ipo_supported(RESULT ipo_supported OUTPUT ipo_output LANGUAGES CXX)
+  check_ipo_supported(
+    RESULT ipo_supported
+    OUTPUT ipo_output
+    LANGUAGES CXX)
   if(ipo_supported)
     set_target_properties(v4link_minimal PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
   endif()

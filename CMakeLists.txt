@@ -78,7 +78,10 @@ endif()
 # Enable LTO if supported and requested
 if(V4LINK_ENABLE_LTO)
   include(CheckIPOSupported)
-  check_ipo_supported(RESULT ipo_supported OUTPUT ipo_output LANGUAGES CXX)
+  check_ipo_supported(
+    RESULT ipo_supported
+    OUTPUT ipo_output
+    LANGUAGES CXX)
   if(ipo_supported)
     set_target_properties(v4link PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     message(STATUS "LTO enabled for v4link")

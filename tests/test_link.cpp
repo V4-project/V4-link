@@ -14,6 +14,7 @@
 
 #include "crc8.hpp"
 #include "frame.hpp"
+#include "v4/task.h"
 #include "v4/vm_api.h"
 #include "v4link/link.hpp"
 #include "v4link/protocol.hpp"
@@ -334,6 +335,89 @@ TEST_CASE("Link state machine robustness")
     // Should still process frame correctly
     REQUIRE(uart_output.size() == 5);
     CHECK(uart_output[3] == static_cast<uint8_t>(ErrorCode::OK));
+  }
+
+  vm_destroy(vm);
+}
+
+TEST_CASE("Link with task system integration")
+{
+  uint8_t vm_memory[4096] = {0};
+  VmConfig cfg = {vm_memory, sizeof(vm_memory), nullptr, 0, nullptr};
+  Vm* vm = vm_create(&cfg);
+  REQUIRE(vm != nullptr);
+
+  std::vector<uint8_t> uart_output;
+  Link link(vm, test_uart_write, &uart_output);
+
+  SUBCASE("Task system cleanup on reset")
+  {
+    // Initialize task system
+    const int err = vm_task_init(vm, 10);
+    REQUIRE(err == 0);
+
+    // Register a simple task word: [RET]
+    const uint8_t task_code[] = {0x51};  // RET opcode
+    std::vector<uint8_t> exec_frame;
+    internal::encode_frame(Command::EXEC, task_code, sizeof(task_code), exec_frame);
+
+    // Execute bytecode to register word
+    uart_output.clear();
+    for (const uint8_t byte : exec_frame)
+    {
+      link.feed_byte(byte);
+    }
+
+    // Should receive ACK with word index
+    REQUIRE(uart_output.size() == 8);
+    CHECK(uart_output[3] == static_cast<uint8_t>(ErrorCode::OK));
+
+    // Send RESET command
+    std::vector<uint8_t> reset_frame;
+    internal::encode_frame(Command::RESET, nullptr, 0, reset_frame);
+
+    uart_output.clear();
+    for (const uint8_t byte : reset_frame)
+    {
+      link.feed_byte(byte);
+    }
+
+    // Should receive ACK
+    REQUIRE(uart_output.size() == 5);
+    CHECK(uart_output[3] == static_cast<uint8_t>(ErrorCode::OK));
+
+    // Cleanup task system before destroying VM
+    vm_task_cleanup(vm);
+  }
+
+  SUBCASE("Multiple exec with task system initialized")
+  {
+    // Initialize task system
+    const int err = vm_task_init(vm, 10);
+    REQUIRE(err == 0);
+
+    // Execute multiple bytecodes
+    const uint8_t code1[] = {0x20, 0x00, 0x00, 0x2A, 0x51};  // LIT 42, RET
+    const uint8_t code2[] = {0x20, 0x00, 0x00, 0x64, 0x51};  // LIT 100, RET
+
+    for (const auto* code : {code1, code2})
+    {
+      std::vector<uint8_t> exec_frame;
+      internal::encode_frame(Command::EXEC, code, 5, exec_frame);
+
+      uart_output.clear();
+      for (const uint8_t byte : exec_frame)
+      {
+        link.feed_byte(byte);
+      }
+
+      // Should receive ACK
+      REQUIRE(uart_output.size() == 8);
+      CHECK(uart_output[3] == static_cast<uint8_t>(ErrorCode::OK));
+    }
+
+    // Cleanup task system before destroying VM
+    vm_task_cleanup(vm);
   }
 
   vm_destroy(vm);

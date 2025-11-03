@@ -7,8 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-11-03
+
 ### Added
 
+- Added test cases for V4 task system integration (`tests/test_link.cpp`)
+  - Tests `vm_task_init()` and `vm_task_cleanup()` with Link
+  - Verifies proper cleanup on RESET command
+  - Ensures no memory leaks when task system is used
 - Added minimal binary size test program (`tests/minimal_binary.cpp`)
   - Measures actual embedded binary size without test framework overhead
   - Integrated into `make size` target with detailed size breakdown

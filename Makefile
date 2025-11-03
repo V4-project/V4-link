@@ -65,7 +65,7 @@ ubsan: clean
 # Build release and show stripped binary sizes
 size:
 	@echo "📦 Building release with size optimization..."
-	@cmake -B build-release -DCMAKE_BUILD_TYPE=Release -DV4LINK_BUILD_TESTS=ON -DV4LINK_OPTIMIZE_SIZE=ON
+	@cmake -B build-release -DCMAKE_BUILD_TYPE=Release -DV4LINK_BUILD_TESTS=ON -DV4LINK_OPTIMIZE_SIZE=ON -DV4LINK_ENABLE_LTO=ON -DV4_ENABLE_LTO=ON
 	@cmake --build build-release -j
 	@echo ""
 	@echo "📊 Stripping and measuring binary sizes..."
@@ -82,6 +82,16 @@ size:
 		cp "build-release/tests/v4link_test" "build-release/tests/v4link_test.stripped" && \
 		strip "build-release/tests/v4link_test.stripped" && \
 		echo "v4link_test: $$(ls -lh build-release/tests/v4link_test.stripped | awk '{print $$5}')"; \
+	fi
+	@echo ""
+	@echo "=== Minimal Binary (stripped) ==="
+	@if [ -f "build-release/tests/v4link_minimal" ] && [ -x "build-release/tests/v4link_minimal" ]; then \
+		cp "build-release/tests/v4link_minimal" "build-release/tests/v4link_minimal.stripped" && \
+		strip "build-release/tests/v4link_minimal.stripped" && \
+		echo "v4link_minimal: $$(ls -lh build-release/tests/v4link_minimal.stripped | awk '{print $$5}')"; \
+		echo ""; \
+		echo "Binary composition:"; \
+		size "build-release/tests/v4link_minimal.stripped" | awk 'NR==1 || NR==2 {print}'; \
 	fi
 	@echo ""
 	@echo "✅ Size measurement complete!"

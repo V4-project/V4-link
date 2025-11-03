@@ -34,3 +34,32 @@ endif()
 
 # Register test with CTest
 add_test(NAME v4link_test COMMAND v4link_test)
+
+# ============================================================================
+# Minimal binary for size measurement
+# ============================================================================
+
+# This minimal executable contains only the essential V4-link code without test
+# frameworks, allowing us to measure the actual minimum binary size for embedded
+# systems.
+add_executable(v4link_minimal minimal_binary.cpp)
+
+# Link only the required libraries (no doctest)
+target_link_libraries(v4link_minimal PRIVATE v4link v4vm V4::mock_hal)
+
+# Include internal headers
+target_include_directories(v4link_minimal PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
+# Apply same compilation flags as main library
+if(NOT MSVC)
+  target_compile_options(v4link_minimal PRIVATE -fexceptions)
+endif()
+
+# Enable LTO for minimal binary if requested
+if(V4LINK_ENABLE_LTO)
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT ipo_supported OUTPUT ipo_output LANGUAGES CXX)
+  if(ipo_supported)
+    set_target_properties(v4link_minimal PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
+endif()

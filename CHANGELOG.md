@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **New protocol commands for VM introspection**
+  - `QUERY_STACK (0x30)` - Query data stack and return stack contents
+  - `QUERY_MEMORY (0x40)` - Query memory dump at specified address
+  - `QUERY_WORD (0x50)` - Query word information by index
+- Protocol documentation for query command request/response formats
+- Support for debugging and REPL meta-commands (`.stack`, `.rstack`, `.dump`, `.see`)
+
 ## [0.2.1] - 2025-11-03
 
 ### Added

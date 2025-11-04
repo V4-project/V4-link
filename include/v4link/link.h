@@ -36,9 +36,12 @@ extern "C"
 
   typedef enum
   {
-    V4LINK_CMD_EXEC = 0x10,  /**< Execute bytecode */
-    V4LINK_CMD_PING = 0x20,  /**< Ping command */
-    V4LINK_CMD_RESET = 0xFF, /**< Reset VM */
+    V4LINK_CMD_EXEC = 0x10,         /**< Execute bytecode */
+    V4LINK_CMD_PING = 0x20,         /**< Ping command */
+    V4LINK_CMD_QUERY_STACK = 0x30,  /**< Query stack state */
+    V4LINK_CMD_QUERY_MEMORY = 0x40, /**< Query memory dump */
+    V4LINK_CMD_QUERY_WORD = 0x50,   /**< Query word information */
+    V4LINK_CMD_RESET = 0xFF,        /**< Reset VM */
   } v4link_command_t;
 
   /* ========================================================================= */

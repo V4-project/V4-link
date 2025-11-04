@@ -95,6 +95,55 @@ enum class Command : uint8_t
   PING = 0x20,
 
   /**
+   * @brief Query stack state
+   *
+   * Request data stack and return stack contents.
+   * DATA field is ignored (typically empty).
+   *
+   * Response format:
+   * [ERR_CODE][DS_DEPTH][DS_VALUES...][RS_DEPTH][RS_VALUES...]
+   * - DS_DEPTH: 1 byte (0-255)
+   * - DS_VALUES: 4 bytes × DS_DEPTH (little-endian i32)
+   * - RS_DEPTH: 1 byte (0-64)
+   * - RS_VALUES: 4 bytes × RS_DEPTH (little-endian i32)
+   */
+  QUERY_STACK = 0x30,
+
+  /**
+   * @brief Query memory dump
+   *
+   * Request memory contents at specified address and length.
+   * DATA format:
+   * [ADDR_L][ADDR_M][ADDR_H][ADDR_X][LEN_L][LEN_H]
+   * - ADDR: 4 bytes (little-endian u32 address)
+   * - LEN: 2 bytes (little-endian u16 length, max 256 bytes)
+   *
+   * Response format:
+   * [ERR_CODE][DATA...]
+   * - ERR_CODE: 1 byte
+   * - DATA: requested memory bytes (0-256 bytes)
+   */
+  QUERY_MEMORY = 0x40,
+
+  /**
+   * @brief Query word information
+   *
+   * Request word bytecode by word index.
+   * DATA format:
+   * [WORD_IDX_L][WORD_IDX_H]
+   * - WORD_IDX: 2 bytes (little-endian u16 word index)
+   *
+   * Response format:
+   * [ERR_CODE][NAME_LEN][NAME...][CODE_LEN_L][CODE_LEN_H][CODE...]
+   * - ERR_CODE: 1 byte
+   * - NAME_LEN: 1 byte (0-63)
+   * - NAME: ASCII string (no null terminator)
+   * - CODE_LEN: 2 bytes (little-endian u16)
+   * - CODE: bytecode bytes
+   */
+  QUERY_WORD = 0x50,
+
+  /**
    * @brief Reset VM
    *
    * Performs a complete VM reset (stacks, dictionary, memory).

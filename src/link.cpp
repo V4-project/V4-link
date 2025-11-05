@@ -287,7 +287,7 @@ void Link::handle_cmd_query_memory()
   {
     uint32_t offset = addr + i;
     v4_u32 value = 0;
-    if (vm_mem_read32(vm_, offset, &value) != V4_OK)
+    if (vm_mem_read32(vm_, offset, &value) != 0)
     {
       // On error, return zeros
       value = 0;

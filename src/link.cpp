@@ -10,7 +10,6 @@
 
 #include "frame.hpp"
 #include "v4/vm_api.h"
-#include "v4/vm.h"  // For Word struct definition
 
 namespace v4
 {
@@ -329,8 +328,11 @@ void Link::handle_cmd_query_word()
   // Response format: [ERR_CODE][NAME_LEN][NAME...][CODE_LEN][CODE...]
   std::vector<uint8_t> response_data;
 
-  // Get word name
-  const char* name = word->name ? word->name : "";
+  // Get word name via API
+  const char* name = vm_word_get_name(word);
+  if (!name)
+    name = "";
+
   size_t name_len = 0;
   while (name[name_len] != '\0' && name_len < 63)
   {
@@ -343,16 +345,17 @@ void Link::handle_cmd_query_word()
     response_data.push_back(static_cast<uint8_t>(name[i]));
   }
 
-  // Get bytecode
-  uint16_t code_len = word->code_len;
+  // Get bytecode via API
+  uint16_t code_len = vm_word_get_code_len(word);
   response_data.push_back(static_cast<uint8_t>(code_len & 0xFF));
   response_data.push_back(static_cast<uint8_t>((code_len >> 8) & 0xFF));
 
-  if (word->code && code_len > 0)
+  const v4_u8* code = vm_word_get_code(word);
+  if (code && code_len > 0)
   {
     for (uint16_t i = 0; i < code_len; ++i)
     {
-      response_data.push_back(word->code[i]);
+      response_data.push_back(code[i]);
     }
   }
 

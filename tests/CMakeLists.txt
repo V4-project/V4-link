@@ -18,9 +18,9 @@ target_include_directories(doctest INTERFACE ${doctest_SOURCE_DIR})
 add_executable(v4link_test test_link.cpp)
 
 # Link libraries in correct order Static library link order matters: dependencies must
-# come AFTER dependents v4link_test depends on: v4link → v4vm → mock_hal So link order
-# should be: v4link, doctest, v4vm (again), mock_hal
-target_link_libraries(v4link_test PRIVATE v4link doctest v4vm V4::mock_hal)
+# come AFTER dependents v4link_test depends on: v4link → v4engine → mock_hal So link order
+# should be: v4link, doctest, v4engine (again), mock_hal
+target_link_libraries(v4link_test PRIVATE v4link doctest v4engine mock_hal)
 
 # Include internal headers for testing
 target_include_directories(v4link_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
@@ -44,7 +44,7 @@ add_test(NAME v4link_test COMMAND v4link_test)
 add_executable(v4link_minimal minimal_binary.cpp)
 
 # Link only the required libraries (no doctest)
-target_link_libraries(v4link_minimal PRIVATE v4link v4vm V4::mock_hal)
+target_link_libraries(v4link_minimal PRIVATE v4link v4engine mock_hal)
 
 # Include internal headers
 target_include_directories(v4link_minimal PRIVATE ${PROJECT_SOURCE_DIR}/src)

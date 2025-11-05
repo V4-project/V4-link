@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Comprehensive CI workflow**
+  - Multi-platform testing (Ubuntu, macOS, Windows)
+  - Debug and Release build testing
+  - Sanitizers (AddressSanitizer, UndefinedBehaviorSanitizer)
+  - Static analysis with clang-tidy
+  - Code formatting checks (clang-format, cmake-format)
+  - Multiple build configuration testing
+
 ### Changed
 - **API encapsulation improvements**
   - Use V4-engine Word accessor APIs (`vm_word_get_*`) instead of direct struct access

@@ -120,6 +120,18 @@ void Link::handle_frame()
       handle_cmd_ping();
       break;
 
+    case Command::QUERY_STACK:
+      handle_cmd_query_stack();
+      break;
+
+    case Command::QUERY_MEMORY:
+      handle_cmd_query_memory();
+      break;
+
+    case Command::QUERY_WORD:
+      handle_cmd_query_word();
+      break;
+
     case Command::RESET:
       handle_cmd_reset();
       break;
@@ -185,6 +197,160 @@ void Link::handle_cmd_reset()
   vm_reset(vm_);
   bytecode_storage_.clear();  // Free all allocated bytecode
   send_ack(ErrorCode::OK);
+}
+
+void Link::handle_cmd_query_stack()
+{
+  // Response format: [ERR_CODE][DS_DEPTH][DS_VALUES...][RS_DEPTH][RS_VALUES...]
+  std::vector<uint8_t> response_data;
+
+  // Get data stack
+  int ds_depth = vm_ds_depth_public(vm_);
+  if (ds_depth < 0)
+  {
+    send_ack(ErrorCode::VM_ERROR);
+    return;
+  }
+
+  response_data.push_back(static_cast<uint8_t>(ds_depth));
+
+  // Copy data stack values (up to 256 values)
+  if (ds_depth > 0)
+  {
+    v4_i32 ds_data[256];
+    int ds_count = vm_ds_copy_to_array(vm_, ds_data, 256);
+    for (int i = 0; i < ds_count; ++i)
+    {
+      // Little-endian i32
+      response_data.push_back(static_cast<uint8_t>(ds_data[i] & 0xFF));
+      response_data.push_back(static_cast<uint8_t>((ds_data[i] >> 8) & 0xFF));
+      response_data.push_back(static_cast<uint8_t>((ds_data[i] >> 16) & 0xFF));
+      response_data.push_back(static_cast<uint8_t>((ds_data[i] >> 24) & 0xFF));
+    }
+  }
+
+  // Get return stack
+  int rs_depth = vm_rs_depth_public(vm_);
+  if (rs_depth < 0)
+  {
+    send_ack(ErrorCode::VM_ERROR);
+    return;
+  }
+
+  response_data.push_back(static_cast<uint8_t>(rs_depth));
+
+  // Copy return stack values (up to 64 values)
+  if (rs_depth > 0)
+  {
+    v4_i32 rs_data[64];
+    int rs_count = vm_rs_copy_to_array(vm_, rs_data, 64);
+    for (int i = 0; i < rs_count; ++i)
+    {
+      // Little-endian i32
+      response_data.push_back(static_cast<uint8_t>(rs_data[i] & 0xFF));
+      response_data.push_back(static_cast<uint8_t>((rs_data[i] >> 8) & 0xFF));
+      response_data.push_back(static_cast<uint8_t>((rs_data[i] >> 16) & 0xFF));
+      response_data.push_back(static_cast<uint8_t>((rs_data[i] >> 24) & 0xFF));
+    }
+  }
+
+  send_ack(ErrorCode::OK, response_data.data(), response_data.size());
+}
+
+void Link::handle_cmd_query_memory()
+{
+  // Request format: [ADDR (4 bytes)][LEN (2 bytes)]
+  if (frame_len_ < 6)
+  {
+    send_ack(ErrorCode::INVALID_FRAME);
+    return;
+  }
+
+  const uint8_t* payload = buffer_.data() + 4;
+
+  // Parse address (little-endian u32)
+  uint32_t addr =
+      payload[0] | (payload[1] << 8) | (payload[2] << 16) | (payload[3] << 24);
+
+  // Parse length (little-endian u16, max 256)
+  uint16_t len = payload[4] | (payload[5] << 8);
+  if (len > 256)
+  {
+    len = 256;
+  }
+
+  // Response format: [ERR_CODE][DATA...]
+  std::vector<uint8_t> response_data;
+
+  // Read memory (assuming vm_mem_read32 is available)
+  for (uint16_t i = 0; i < len; i += 4)
+  {
+    uint32_t offset = addr + i;
+    v4_i32 value = vm_mem_read32(vm_, offset);
+
+    // Add up to 4 bytes (handle partial read at end)
+    for (int j = 0; j < 4 && (i + j) < len; ++j)
+    {
+      response_data.push_back(static_cast<uint8_t>((value >> (j * 8)) & 0xFF));
+    }
+  }
+
+  send_ack(ErrorCode::OK, response_data.data(), response_data.size());
+}
+
+void Link::handle_cmd_query_word()
+{
+  // Request format: [WORD_IDX (2 bytes)]
+  if (frame_len_ < 2)
+  {
+    send_ack(ErrorCode::INVALID_FRAME);
+    return;
+  }
+
+  const uint8_t* payload = buffer_.data() + 4;
+
+  // Parse word index (little-endian u16)
+  uint16_t word_idx = payload[0] | (payload[1] << 8);
+
+  // Get word from VM
+  Word* word = vm_get_word(vm_, word_idx);
+  if (!word)
+  {
+    send_ack(ErrorCode::VM_ERROR);
+    return;
+  }
+
+  // Response format: [ERR_CODE][NAME_LEN][NAME...][CODE_LEN][CODE...]
+  std::vector<uint8_t> response_data;
+
+  // Get word name
+  const char* name = word->name ? word->name : "";
+  size_t name_len = 0;
+  while (name[name_len] != '\0' && name_len < 63)
+  {
+    ++name_len;
+  }
+
+  response_data.push_back(static_cast<uint8_t>(name_len));
+  for (size_t i = 0; i < name_len; ++i)
+  {
+    response_data.push_back(static_cast<uint8_t>(name[i]));
+  }
+
+  // Get bytecode
+  uint16_t code_len = word->code_len;
+  response_data.push_back(static_cast<uint8_t>(code_len & 0xFF));
+  response_data.push_back(static_cast<uint8_t>((code_len >> 8) & 0xFF));
+
+  if (word->code && code_len > 0)
+  {
+    for (uint16_t i = 0; i < code_len; ++i)
+    {
+      response_data.push_back(word->code[i]);
+    }
+  }
+
+  send_ack(ErrorCode::OK, response_data.data(), response_data.size());
 }
 
 void Link::send_ack(ErrorCode code, const uint8_t* data, size_t data_len)

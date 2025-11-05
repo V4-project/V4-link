@@ -153,6 +153,21 @@ class Link
    */
   void handle_cmd_reset();
 
+  /**
+   * @brief Handle CMD_QUERY_STACK command
+   */
+  void handle_cmd_query_stack();
+
+  /**
+   * @brief Handle CMD_QUERY_MEMORY command
+   */
+  void handle_cmd_query_memory();
+
+  /**
+   * @brief Handle CMD_QUERY_WORD command
+   */
+  void handle_cmd_query_word();
+
   Vm* vm_;                       ///< V4 VM instance
   UartWriteFn uart_write_;       ///< UART write callback
   void* user_context_;           ///< User context for callback

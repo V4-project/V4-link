@@ -138,7 +138,7 @@ void Link::handle_frame()
       break;
 
     default:
-      send_ack(ErrorCode::ERROR);
+      send_ack(ErrorCode::GENERAL_ERROR);
       break;
   }
 }

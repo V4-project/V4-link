@@ -4,7 +4,7 @@
 
 // name, value, message
 ERR(OK,             0,  "ok")
-ERR(ERROR,          1,  "general error")
+ERR(GENERAL_ERROR,  1,  "general error")
 ERR(INVALID_FRAME,  2,  "invalid frame")
 ERR(BUFFER_FULL,    3,  "buffer full")
 ERR(VM_ERROR,       4,  "vm error")

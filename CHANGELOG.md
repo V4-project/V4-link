@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **API encapsulation improvements**
+  - Use V4-engine Word accessor APIs (`vm_word_get_*`) instead of direct struct access
+  - Include `v4/errors.hpp` for error constants (`V4_OK`)
+  - Removes dependency on internal V4-engine headers
+
 ## [0.3.0] - 2025-11-05
 
 ### Added

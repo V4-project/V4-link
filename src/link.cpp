@@ -9,6 +9,7 @@
 #include "v4link/link.hpp"
 
 #include "frame.hpp"
+#include "v4/errors.hpp"
 #include "v4/vm_api.h"
 
 namespace v4
@@ -287,7 +288,7 @@ void Link::handle_cmd_query_memory()
   {
     uint32_t offset = addr + i;
     v4_u32 value = 0;
-    if (vm_mem_read32(vm_, offset, &value) != 0)
+    if (vm_mem_read32(vm_, offset, &value) != V4_OK)
     {
       // On error, return zeros
       value = 0;

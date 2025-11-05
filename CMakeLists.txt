@@ -16,11 +16,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(V4LINK_BUILD_TESTS "Build unit tests" ON)
 option(V4LINK_OPTIMIZE_SIZE "Optimize for size (-Os)" ON)
 option(V4LINK_ENABLE_LTO "Enable Link Time Optimization" OFF)
-
-# Dependency paths
-set(V4_LOCAL_PATH
-    "${CMAKE_CURRENT_SOURCE_DIR}/../V4"
-    CACHE PATH "Path to local V4 source")
+option(V4_FETCH "Fetch V4-engine from Git" OFF)
 
 # ============================================================================
 # V4 VM Dependency
@@ -28,11 +24,45 @@ set(V4_LOCAL_PATH
 
 include(FetchContent)
 
-if(EXISTS "${V4_LOCAL_PATH}/CMakeLists.txt")
-  message(STATUS "Using local V4 from: ${V4_LOCAL_PATH}")
-  add_subdirectory(${V4_LOCAL_PATH} ${CMAKE_BINARY_DIR}/v4)
+# Dependency paths
+set(V4_LOCAL_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/../V4-engine"
+    CACHE PATH "Path to local V4-engine source")
+
+if(V4_FETCH)
+  # Fetch V4-engine from GitHub
+  set(V4_GIT_REPO
+      "https://github.com/V4-project/V4-engine.git"
+      CACHE STRING "V4-engine Git repository")
+  set(V4_GIT_TAG
+      "main"
+      CACHE STRING "V4-engine Git tag/branch")
+
+  # Disable V4's own tests to avoid conflicts
+  set(V4_BUILD_TESTS
+      OFF
+      CACHE BOOL "Build V4 tests" FORCE)
+
+  fetchcontent_declare(
+    v4_engine
+    GIT_REPOSITORY ${V4_GIT_REPO}
+    GIT_TAG ${V4_GIT_TAG})
+
+  fetchcontent_makeavailable(v4_engine)
+  message(STATUS "Fetched V4-engine from ${V4_GIT_REPO} (${V4_GIT_TAG})")
+
+elseif(EXISTS "${V4_LOCAL_PATH}/CMakeLists.txt")
+  # Use local V4-engine
+  message(STATUS "Using local V4-engine from: ${V4_LOCAL_PATH}")
+  set(V4_BUILD_TESTS
+      OFF
+      CACHE BOOL "Build V4 tests" FORCE)
+  add_subdirectory(${V4_LOCAL_PATH} ${CMAKE_BINARY_DIR}/v4_engine)
 else()
-  message(FATAL_ERROR "V4 not found at ${V4_LOCAL_PATH}. Please clone V4 VM repository.")
+  message(
+    FATAL_ERROR
+      "V4-engine not found at ${V4_LOCAL_PATH}. Please clone V4-engine repository or use -DV4_FETCH=ON"
+  )
 endif()
 
 # ============================================================================

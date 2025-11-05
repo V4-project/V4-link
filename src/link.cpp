@@ -10,6 +10,7 @@
 
 #include "frame.hpp"
 #include "v4/vm_api.h"
+#include "v4/vm.h"  // For Word struct definition
 
 namespace v4
 {
@@ -286,7 +287,12 @@ void Link::handle_cmd_query_memory()
   for (uint16_t i = 0; i < len; i += 4)
   {
     uint32_t offset = addr + i;
-    v4_i32 value = vm_mem_read32(vm_, offset);
+    v4_u32 value = 0;
+    if (vm_mem_read32(vm_, offset, &value) != V4_OK)
+    {
+      // On error, return zeros
+      value = 0;
+    }
 
     // Add up to 4 bytes (handle partial read at end)
     for (int j = 0; j < 4 && (i + j) < len; ++j)

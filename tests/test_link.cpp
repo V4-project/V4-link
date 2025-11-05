@@ -29,8 +29,7 @@ TEST_CASE("CRC8 calculation")
 {
   SUBCASE("Empty data")
   {
-    const uint8_t data[] = {};
-    const uint8_t crc = internal::calc_crc8(data, 0);
+    const uint8_t crc = internal::calc_crc8(nullptr, 0);
     CHECK(crc == 0x00);
   }
 

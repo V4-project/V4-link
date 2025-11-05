@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-11-05
+
 ### Added
 - **New protocol commands for VM introspection**
   - `QUERY_STACK (0x30)` - Query data stack and return stack contents
   - `QUERY_MEMORY (0x40)` - Query memory dump at specified address
   - `QUERY_WORD (0x50)` - Query word information by index
 - Protocol documentation for query command request/response formats
+- Handler implementations for all query commands
+  - `handle_cmd_query_stack()` - Returns formatted stack data
+  - `handle_cmd_query_memory()` - Returns memory dump
+  - `handle_cmd_query_word()` - Returns word name and bytecode
 - Support for debugging and REPL meta-commands (`.stack`, `.rstack`, `.dump`, `.see`)
 
 ## [0.2.1] - 2025-11-03
@@ -126,7 +132,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secondary: ESP32-C6 (RISC-V, 4MB Flash, 512KB RAM)
 - Host: POSIX systems (Linux, macOS) for testing
 
-[Unreleased]: https://github.com/V4-project/V4-link/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/V4-project/V4-link/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/V4-project/V4-link/compare/v0.2.1...v0.3.0
+[0.2.1]: https://github.com/V4-project/V4-link/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/V4-project/V4-link/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/V4-project/V4-link/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/V4-project/V4-link/releases/tag/v0.1.0

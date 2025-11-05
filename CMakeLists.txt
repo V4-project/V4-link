@@ -78,11 +78,11 @@ target_include_directories(
   PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>
   PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
-# Link V4 VM library Note: v4vm requires mock_hal for testing/development builds
-if(TARGET V4::mock_hal)
-  target_link_libraries(v4link PUBLIC v4vm V4::mock_hal)
+# Link V4 engine library Note: v4engine requires mock_hal for testing/development builds
+if(TARGET mock_hal)
+  target_link_libraries(v4link PUBLIC v4engine mock_hal)
 else()
-  target_link_libraries(v4link PUBLIC v4vm)
+  target_link_libraries(v4link PUBLIC v4engine)
 endif()
 
 # Compiler flags

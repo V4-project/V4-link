@@ -1,0 +1,175 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }} - ${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        build_type: [Debug, Release]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DV4_BUILD_TESTS=ON -DV4_FETCH=ON
+
+    - name: Build
+      run: cmake --build build --config ${{ matrix.build_type }} -j
+
+    - name: Run tests
+      working-directory: build
+      run: ctest -C ${{ matrix.build_type }} --output-on-failure --verbose
+
+    - name: Upload test results on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}-${{ matrix.build_type }}
+        path: build/Testing/Temporary/
+        retention-days: 7
+
+  sanitizers:
+    name: Sanitizers (Ubuntu)
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        sanitizer: [address, undefined]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang
+
+    - name: Configure CMake with sanitizers
+      env:
+        CC: clang
+        CXX: clang++
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DV4_BUILD_TESTS=ON \
+          -DV4_FETCH=ON \
+          -DV4_ENABLE_LTO=OFF \
+          -DCMAKE_CXX_FLAGS="-fsanitize=${{ matrix.sanitizer }} -fno-omit-frame-pointer -g"
+
+    - name: Build
+      run: cmake --build build -j
+
+    - name: Run tests with sanitizer
+      working-directory: build
+      run: ctest --output-on-failure --verbose
+
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Install clang-tidy
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-tidy
+
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DV4_BUILD_TESTS=ON -DV4_FETCH=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+    - name: Run clang-tidy
+      run: |
+        clang-tidy -p build src/*.cpp --warnings-as-errors='' || true
+
+  formatting:
+    name: Code Formatting Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install clang-format
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format
+
+    - name: Check C/C++ formatting
+      run: |
+        find src include tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.c' \) \
+        -not -path "*/vendor/*" | \
+        xargs clang-format --dry-run --Werror || \
+        (echo "❌ C/C++ formatting check failed. Run 'make format' to fix." && exit 1)
+
+    - name: Install cmake-format
+      run: pip install cmake-format pyyaml
+
+    - name: Check CMake formatting
+      run: |
+        find . -name 'CMakeLists.txt' -o -name '*.cmake' | \
+        xargs cmake-format --check || \
+        (echo "❌ CMake formatting check failed. Run 'make format' to fix." && exit 1)
+
+  build-options:
+    name: Build Options - ${{ matrix.config.name }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - name: "Minimal (library only)"
+            tests: "OFF"
+          - name: "With tests"
+            tests: "ON"
+          - name: "Size optimized"
+            tests: "ON"
+            optimize_size: "ON"
+          - name: "No size optimization"
+            tests: "ON"
+            optimize_size: "OFF"
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DV4_BUILD_TESTS=${{ matrix.config.tests }} \
+          -DV4_FETCH=ON \
+          ${{ matrix.config.optimize_size && format('-DV4_OPTIMIZE_SIZE={0}', matrix.config.optimize_size) || '' }}
+
+    - name: Build
+      run: cmake --build build -j
+
+    - name: Run tests
+      if: matrix.config.tests == 'ON'
+      working-directory: build
+      run: ctest --output-on-failure --verbose

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2025-11-05
+
 ### Added
 - **Comprehensive CI workflow**
   - Multi-platform testing (Ubuntu, macOS, Windows)
@@ -21,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Use V4-engine Word accessor APIs (`vm_word_get_*`) instead of direct struct access
   - Include `v4/errors.hpp` for error constants (`V4_OK`)
   - Removes dependency on internal V4-engine headers
+- Renamed `ErrorCode::ERROR` to `ErrorCode::GENERAL_ERROR` to avoid Windows macro conflict
+
+### Fixed
+- Windows build compatibility issues
+  - Empty array initialization (C2466 error)
+  - ERROR macro conflict with Windows.h
 
 ## [0.3.0] - 2025-11-05
 
@@ -147,7 +155,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secondary: ESP32-C6 (RISC-V, 4MB Flash, 512KB RAM)
 - Host: POSIX systems (Linux, macOS) for testing
 
-[Unreleased]: https://github.com/V4-project/V4-link/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/V4-project/V4-link/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/V4-project/V4-link/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/V4-project/V4-link/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/V4-project/V4-link/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/V4-project/V4-link/compare/v0.1.1...v0.2.0

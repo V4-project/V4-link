@@ -177,15 +177,27 @@ void relocate_calls(uint8_t* code, size_t len, int offset)
       case 0x02:  // DROP
       case 0x03:  // SWAP
       case 0x04:  // OVER
-      case 0x10 ... 0x18:  // Arithmetic
-      case 0x20 ... 0x2E:  // Comparison, bitwise
-      case 0x30 ... 0x37:  // Memory access
+      // Arithmetic
+      case 0x10: case 0x11: case 0x12: case 0x13: case 0x14:
+      case 0x15: case 0x16: case 0x17: case 0x18:
+      // Comparison, bitwise
+      case 0x20: case 0x21: case 0x22: case 0x23: case 0x24:
+      case 0x25: case 0x26: case 0x27: case 0x28: case 0x29:
+      case 0x2A: case 0x2B: case 0x2C: case 0x2D: case 0x2E:
+      // Memory access
+      case 0x30: case 0x31: case 0x32: case 0x33:
+      case 0x34: case 0x35: case 0x36: case 0x37:
       case 0x43:  // SELECT
       case 0x51:  // RET
-      case 0x70 ... 0x72:  // Return stack
-      case 0x73 ... 0x75:  // Compact literals (LIT0, LIT1, LITN1)
-      case 0x7C ... 0x7F:  // Local get/set shortcuts
-      case 0x90 ... 0x9A:  // Task operations
+      // Return stack
+      case 0x70: case 0x71: case 0x72:
+      // Compact literals (LIT0, LIT1, LITN1)
+      case 0x73: case 0x74: case 0x75:
+      // Local get/set shortcuts
+      case 0x7C: case 0x7D: case 0x7E: case 0x7F:
+      // Task operations
+      case 0x90: case 0x91: case 0x92: case 0x93: case 0x94:
+      case 0x95: case 0x96: case 0x97: case 0x98: case 0x99: case 0x9A:
         // No operands, continue
         break;
 

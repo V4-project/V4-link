@@ -11,7 +11,8 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace v4::link::internal {
+namespace v4::link::internal
+{
 
 /**
  * @brief Relocate CALL instructions in bytecode by adding offset to word indices

@@ -146,7 +146,8 @@ void Link::handle_frame()
   }
 }
 
-namespace internal {
+namespace internal
+{
 
 void relocate_calls(uint8_t* code, size_t len, int offset)
 {
@@ -178,26 +179,67 @@ void relocate_calls(uint8_t* code, size_t len, int offset)
       case 0x03:  // SWAP
       case 0x04:  // OVER
       // Arithmetic
-      case 0x10: case 0x11: case 0x12: case 0x13: case 0x14:
-      case 0x15: case 0x16: case 0x17: case 0x18:
+      case 0x10:
+      case 0x11:
+      case 0x12:
+      case 0x13:
+      case 0x14:
+      case 0x15:
+      case 0x16:
+      case 0x17:
+      case 0x18:
       // Comparison, bitwise
-      case 0x20: case 0x21: case 0x22: case 0x23: case 0x24:
-      case 0x25: case 0x26: case 0x27: case 0x28: case 0x29:
-      case 0x2A: case 0x2B: case 0x2C: case 0x2D: case 0x2E:
+      case 0x20:
+      case 0x21:
+      case 0x22:
+      case 0x23:
+      case 0x24:
+      case 0x25:
+      case 0x26:
+      case 0x27:
+      case 0x28:
+      case 0x29:
+      case 0x2A:
+      case 0x2B:
+      case 0x2C:
+      case 0x2D:
+      case 0x2E:
       // Memory access
-      case 0x30: case 0x31: case 0x32: case 0x33:
-      case 0x34: case 0x35: case 0x36: case 0x37:
+      case 0x30:
+      case 0x31:
+      case 0x32:
+      case 0x33:
+      case 0x34:
+      case 0x35:
+      case 0x36:
+      case 0x37:
       case 0x43:  // SELECT
       case 0x51:  // RET
       // Return stack
-      case 0x70: case 0x71: case 0x72:
+      case 0x70:
+      case 0x71:
+      case 0x72:
       // Compact literals (LIT0, LIT1, LITN1)
-      case 0x73: case 0x74: case 0x75:
+      case 0x73:
+      case 0x74:
+      case 0x75:
       // Local get/set shortcuts
-      case 0x7C: case 0x7D: case 0x7E: case 0x7F:
+      case 0x7C:
+      case 0x7D:
+      case 0x7E:
+      case 0x7F:
       // Task operations
-      case 0x90: case 0x91: case 0x92: case 0x93: case 0x94:
-      case 0x95: case 0x96: case 0x97: case 0x98: case 0x99: case 0x9A:
+      case 0x90:
+      case 0x91:
+      case 0x92:
+      case 0x93:
+      case 0x94:
+      case 0x95:
+      case 0x96:
+      case 0x97:
+      case 0x98:
+      case 0x99:
+      case 0x9A:
         // No operands, continue
         break;
 
@@ -247,8 +289,8 @@ void Link::handle_cmd_exec()
   const size_t payload_len = frame_len_;
 
   // Check if payload is a .v4b format (starts with "V4BC" magic)
-  if (payload_len >= 16 && payload[0] == 0x56 && payload[1] == 0x34 && payload[2] == 0x42 &&
-      payload[3] == 0x43)
+  if (payload_len >= 16 && payload[0] == 0x56 && payload[1] == 0x34 &&
+      payload[2] == 0x42 && payload[3] == 0x43)
   {
     // Parse .v4b header
     uint8_t version_minor = payload[5];
@@ -258,7 +300,8 @@ void Link::handle_cmd_exec()
 
     if (version_minor >= 2)
     {
-      word_count = payload[12] | (payload[13] << 8) | (payload[14] << 16) | (payload[15] << 24);
+      word_count =
+          payload[12] | (payload[13] << 8) | (payload[14] << 16) | (payload[15] << 24);
     }
 
     // Validate payload size

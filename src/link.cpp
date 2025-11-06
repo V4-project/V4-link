@@ -8,6 +8,8 @@
 
 #include "v4link/link.hpp"
 
+#include <string>
+
 #include "frame.hpp"
 #include "v4/errors.hpp"
 #include "v4/vm_api.h"
@@ -146,46 +148,156 @@ void Link::handle_frame()
 void Link::handle_cmd_exec()
 {
   // Payload starts at index 4 (after STX, LEN_L, LEN_H, CMD)
-  const uint8_t* bytecode = buffer_.data() + 4;
-  const size_t bytecode_len = frame_len_;
+  const uint8_t* payload = buffer_.data() + 4;
+  const size_t payload_len = frame_len_;
 
-  // Copy bytecode to persistent storage (VM stores pointer, doesn't copy)
-  std::vector<uint8_t> bytecode_copy(bytecode, bytecode + bytecode_len);
-  bytecode_storage_.push_back(std::move(bytecode_copy));
-  const uint8_t* persistent_bytecode = bytecode_storage_.back().data();
-
-  // Register bytecode as anonymous word
-  const int wid =
-      vm_register_word(vm_, nullptr, persistent_bytecode, static_cast<int>(bytecode_len));
-
-  if (wid < 0)
+  // Check if payload is a .v4b format (starts with "V4BC" magic)
+  if (payload_len >= 16 && payload[0] == 0x56 && payload[1] == 0x34 && payload[2] == 0x42 &&
+      payload[3] == 0x43)
   {
-    // Registration failed, remove the bytecode copy
-    bytecode_storage_.pop_back();
-    send_ack(ErrorCode::VM_ERROR);
-    return;
-  }
+    // Parse .v4b header
+    uint8_t version_minor = payload[5];
+    uint32_t code_size =
+        payload[8] | (payload[9] << 8) | (payload[10] << 16) | (payload[11] << 24);
+    uint32_t word_count = 0;
 
-  // Get word entry
-  Word* entry = vm_get_word(vm_, wid);
-  if (entry == nullptr)
+    if (version_minor >= 2)
+    {
+      word_count = payload[12] | (payload[13] << 8) | (payload[14] << 16) | (payload[15] << 24);
+    }
+
+    // Validate payload size
+    if (16 + code_size > payload_len)
+    {
+      send_ack(ErrorCode::GENERAL_ERROR);
+      return;
+    }
+
+    std::vector<int> word_indices;
+
+    // Register word definitions first (v0.2+)
+    if (word_count > 0)
+    {
+      const uint8_t* word_ptr = payload + 16 + code_size;
+      const uint8_t* payload_end = payload + payload_len;
+
+      for (uint32_t i = 0; i < word_count; i++)
+      {
+        // Check remaining space
+        if (word_ptr + 1 > payload_end)
+        {
+          send_ack(ErrorCode::GENERAL_ERROR);
+          return;
+        }
+
+        // Read name length
+        uint8_t name_len = *word_ptr++;
+
+        // Read name
+        if (word_ptr + name_len + 4 > payload_end)
+        {
+          send_ack(ErrorCode::GENERAL_ERROR);
+          return;
+        }
+
+        std::string word_name(reinterpret_cast<const char*>(word_ptr), name_len);
+        word_ptr += name_len;
+
+        // Read code length
+        uint32_t word_code_len =
+            word_ptr[0] | (word_ptr[1] << 8) | (word_ptr[2] << 16) | (word_ptr[3] << 24);
+        word_ptr += 4;
+
+        // Check code fits
+        if (word_ptr + word_code_len > payload_end)
+        {
+          send_ack(ErrorCode::GENERAL_ERROR);
+          return;
+        }
+
+        // Copy word code to persistent storage
+        std::vector<uint8_t> word_code_copy(word_ptr, word_ptr + word_code_len);
+        bytecode_storage_.push_back(std::move(word_code_copy));
+        const uint8_t* persistent_word_code = bytecode_storage_.back().data();
+
+        // Register word with VM
+        const int wid =
+            vm_register_word(vm_, word_name.c_str(), persistent_word_code, word_code_len);
+
+        if (wid < 0)
+        {
+          bytecode_storage_.pop_back();
+          send_ack(ErrorCode::VM_ERROR);
+          return;
+        }
+
+        word_indices.push_back(wid);
+        word_ptr += word_code_len;
+      }
+    }
+
+    // Register and execute main bytecode
+    const uint8_t* main_code = payload + 16;
+    std::vector<uint8_t> main_code_copy(main_code, main_code + code_size);
+    bytecode_storage_.push_back(std::move(main_code_copy));
+    const uint8_t* persistent_main_code = bytecode_storage_.back().data();
+
+    const int main_wid = vm_register_word(vm_, nullptr, persistent_main_code, code_size);
+
+    if (main_wid < 0)
+    {
+      bytecode_storage_.pop_back();
+      send_ack(ErrorCode::VM_ERROR);
+      return;
+    }
+
+    word_indices.push_back(main_wid);
+
+    // Execute main bytecode
+    Word* entry = vm_get_word(vm_, main_wid);
+    if (entry)
+    {
+      vm_exec(vm_, entry);
+    }
+
+    // Return all word indices
+    std::vector<uint8_t> response_data;
+    response_data.push_back(static_cast<uint8_t>(word_indices.size()));
+    for (int wid : word_indices)
+    {
+      response_data.push_back(static_cast<uint8_t>(wid & 0xFF));
+      response_data.push_back(static_cast<uint8_t>((wid >> 8) & 0xFF));
+    }
+    send_ack(ErrorCode::OK, response_data.data(), response_data.size());
+  }
+  else
   {
-    send_ack(ErrorCode::VM_ERROR);
-    return;
+    // Legacy raw bytecode (no .v4b header)
+    std::vector<uint8_t> bytecode_copy(payload, payload + payload_len);
+    bytecode_storage_.push_back(std::move(bytecode_copy));
+    const uint8_t* persistent_bytecode = bytecode_storage_.back().data();
+
+    const int wid = vm_register_word(vm_, nullptr, persistent_bytecode, payload_len);
+
+    if (wid < 0)
+    {
+      bytecode_storage_.pop_back();
+      send_ack(ErrorCode::VM_ERROR);
+      return;
+    }
+
+    Word* entry = vm_get_word(vm_, wid);
+    if (entry)
+    {
+      vm_exec(vm_, entry);
+    }
+
+    uint8_t response_data[3];
+    response_data[0] = 1;
+    response_data[1] = static_cast<uint8_t>(wid & 0xFF);
+    response_data[2] = static_cast<uint8_t>((wid >> 8) & 0xFF);
+    send_ack(ErrorCode::OK, response_data, sizeof(response_data));
   }
-
-  // Execute bytecode
-  // Note: Execution may fail for word definitions (e.g., [DUP, MUL, RET])
-  // which should only be registered, not executed. We ignore execution errors
-  // and always return the word index, as the word was registered successfully.
-  vm_exec(vm_, entry);
-
-  // Always return word index, even if execution failed
-  uint8_t response_data[3];
-  response_data[0] = 1;  // WORD_COUNT = 1 (always 1 for single bytecode execution)
-  response_data[1] = static_cast<uint8_t>(wid & 0xFF);         // WORD_IDX_L
-  response_data[2] = static_cast<uint8_t>((wid >> 8) & 0xFF);  // WORD_IDX_H
-  send_ack(ErrorCode::OK, response_data, sizeof(response_data));
 }
 
 void Link::handle_cmd_ping()

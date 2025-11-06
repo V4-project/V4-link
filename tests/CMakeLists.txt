@@ -36,6 +36,26 @@ endif()
 add_test(NAME v4link_test COMMAND v4link_test)
 
 # ============================================================================
+# Relocation unit tests
+# ============================================================================
+
+add_executable(v4link_relocation_test test_relocation.cpp)
+
+# Link all required libraries (same as v4link_test)
+target_link_libraries(v4link_relocation_test PRIVATE v4link doctest v4engine mock_hal)
+
+# Include internal headers for testing
+target_include_directories(v4link_relocation_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
+# Enable exceptions for doctest
+if(NOT MSVC)
+  target_compile_options(v4link_relocation_test PRIVATE -fexceptions)
+endif()
+
+# Register test with CTest
+add_test(NAME v4link_relocation_test COMMAND v4link_relocation_test)
+
+# ============================================================================
 # Minimal binary for size measurement
 # ============================================================================
 

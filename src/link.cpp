@@ -13,6 +13,7 @@
 #include "frame.hpp"
 #include "v4/errors.hpp"
 #include "v4/vm_api.h"
+#include "v4link/internal/relocation.hpp"
 
 namespace v4
 {
@@ -145,6 +146,88 @@ void Link::handle_frame()
   }
 }
 
+namespace internal {
+
+void relocate_calls(uint8_t* code, size_t len, int offset)
+{
+  if (offset == 0)
+    return;  // No relocation needed
+
+  size_t pc = 0;
+  while (pc < len)
+  {
+    uint8_t op = code[pc++];
+
+    switch (op)
+    {
+      // CALL: relocate 16-bit word index
+      case 0x50:  // OP_CALL
+        if (pc + 2 <= len)
+        {
+          uint16_t old_idx = code[pc] | (code[pc + 1] << 8);
+          uint16_t new_idx = old_idx + offset;
+          code[pc] = new_idx & 0xFF;
+          code[pc + 1] = (new_idx >> 8) & 0xFF;
+          pc += 2;
+        }
+        break;
+
+      // No-operand instructions
+      case 0x01:  // DUP
+      case 0x02:  // DROP
+      case 0x03:  // SWAP
+      case 0x04:  // OVER
+      case 0x10 ... 0x18:  // Arithmetic
+      case 0x20 ... 0x2E:  // Comparison, bitwise
+      case 0x30 ... 0x37:  // Memory access
+      case 0x43:  // SELECT
+      case 0x51:  // RET
+      case 0x70 ... 0x72:  // Return stack
+      case 0x73 ... 0x75:  // Compact literals (LIT0, LIT1, LITN1)
+      case 0x7C ... 0x7F:  // Local get/set shortcuts
+      case 0x90 ... 0x9A:  // Task operations
+        // No operands, continue
+        break;
+
+      // 8-bit immediate
+      case 0x76:  // LIT_U8
+      case 0x77:  // LIT_I8
+      case 0x79:  // LGET
+      case 0x7A:  // LSET
+      case 0x7B:  // LTEE
+      case 0x80:  // LINC
+      case 0x81:  // LDEC
+        pc += 1;
+        break;
+
+      // 16-bit immediate (relative jump or literal)
+      case 0x40:  // JMP
+      case 0x41:  // JZ
+      case 0x42:  // JNZ
+      case 0x78:  // LIT_I16
+        pc += 2;
+        break;
+
+      // 32-bit immediate
+      case 0x00:  // LIT
+        pc += 4;
+        break;
+
+      // SYS: special 16-byte struct
+      case 0x60:  // SYS
+        pc += 16;
+        break;
+
+      default:
+        // Unknown opcode - skip 1 byte and continue
+        // (conservative approach to avoid breaking on unknown opcodes)
+        break;
+    }
+  }
+}
+
+}  // namespace internal
+
 void Link::handle_cmd_exec()
 {
   // Payload starts at index 4 (after STX, LEN_L, LEN_H, CMD)
@@ -180,6 +263,10 @@ void Link::handle_cmd_exec()
     {
       const uint8_t* word_ptr = payload + 16 + code_size;
       const uint8_t* payload_end = payload + payload_len;
+
+      // First pass: register all words and collect indices
+      int first_word_vm_idx = -1;
+      std::vector<size_t> storage_indices;  // Track bytecode_storage_ indices
 
       for (uint32_t i = 0; i < word_count; i++)
       {
@@ -218,6 +305,8 @@ void Link::handle_cmd_exec()
         // Copy word code to persistent storage
         std::vector<uint8_t> word_code_copy(word_ptr, word_ptr + word_code_len);
         bytecode_storage_.push_back(std::move(word_code_copy));
+        storage_indices.push_back(bytecode_storage_.size() - 1);
+
         const uint8_t* persistent_word_code = bytecode_storage_.back().data();
 
         // Register word with VM
@@ -231,8 +320,24 @@ void Link::handle_cmd_exec()
           return;
         }
 
+        // Save first word's index for relocation
+        if (first_word_vm_idx < 0)
+        {
+          first_word_vm_idx = wid;
+        }
+
         word_indices.push_back(wid);
         word_ptr += word_code_len;
+      }
+
+      // Second pass: relocate CALL instructions in all registered word bytecodes
+      // bytecode_storage_ contains the live bytecode that VM references
+      for (size_t i = 0; i < storage_indices.size(); i++)
+      {
+        size_t storage_idx = storage_indices[i];
+        uint8_t* code = bytecode_storage_[storage_idx].data();
+        size_t len = bytecode_storage_[storage_idx].size();
+        internal::relocate_calls(code, len, first_word_vm_idx);
       }
     }
 
@@ -240,6 +345,12 @@ void Link::handle_cmd_exec()
     const uint8_t* main_code = payload + 16;
     std::vector<uint8_t> main_code_copy(main_code, main_code + code_size);
     bytecode_storage_.push_back(std::move(main_code_copy));
+
+    // Relocate CALL instructions in main code
+    // Main code references words that were just registered (starting at word_indices[0])
+    const int main_offset = word_count > 0 ? word_indices[0] : 0;
+    internal::relocate_calls(bytecode_storage_.back().data(), code_size, main_offset);
+
     const uint8_t* persistent_main_code = bytecode_storage_.back().data();
 
     const int main_wid = vm_register_word(vm_, nullptr, persistent_main_code, code_size);

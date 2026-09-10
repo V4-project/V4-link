@@ -12,6 +12,11 @@ using namespace v4::link;
 
 namespace
 {
+void capture_panic(void* user, const V4PanicInfo* info)
+{
+  *static_cast<v4_err*>(user) = info->error_code;
+}
+
 struct ErrorFixture
 {
   uint8_t memory[1024] = {};
@@ -114,11 +119,7 @@ TEST_CASE_FIXTURE(ErrorFixture, "Queries report engine failures instead of inven
 TEST_CASE_FIXTURE(ErrorFixture, "Returning panic callback permits the error response")
 {
   v4_err observed = 0;
-  vm_set_panic_handler(
-      vm,
-      [](void* user, const V4PanicInfo* info)
-      { *static_cast<v4_err*>(user) = info->error_code; },
-      &observed);
+  vm_set_panic_handler(vm, capture_panic, &observed);
   send(Command::EXEC, {0x74, 0x73, 0x13, 0x51});
   CHECK(observed == V4_ERR(DivByZero));
   expect_error(observed);

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-10
+
+### Fixed
+- Use a named panic callback in regression tests to keep formatting consistent across local and CI clang-format versions. No protocol or runtime behavior changes.
+
 ## [0.5.0] - 2026-09-10
 
 ### Added

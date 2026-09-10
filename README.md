@@ -60,6 +60,15 @@ CRC8   = Checksum (polynomial 0x07)
 
 ### Response Codes
 
+Since 0.5.0, VM_ERROR includes four DATA bytes containing the original signed
+little-endian engine error from V4-engine/errors.def (for example -11 for division
+by zero). The response is `[A5][05][00][04][engine error:i32 LE][CRC8]`.
+Failure responses contain no word indices. Existing status codes and success
+frames are unchanged; older hosts can still detect VM_ERROR from its status byte.
+Execution/registration/query failures are reported without rolling back VM state.
+Inspect the device or RESET before retrying. A negative SYS result on the data
+stack is an application result, not a VM execution failure.
+
 - **0x00 OK**: Success
 - **0x01 ERROR**: General error
 - **0x02 INVALID_FRAME**: CRC mismatch

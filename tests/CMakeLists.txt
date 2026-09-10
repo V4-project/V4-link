@@ -55,6 +55,14 @@ endif()
 # Register test with CTest
 add_test(NAME v4link_relocation_test COMMAND v4link_relocation_test)
 
+add_executable(v4link_errors_test test_errors.cpp)
+target_link_libraries(v4link_errors_test PRIVATE v4link doctest v4engine mock_hal)
+target_include_directories(v4link_errors_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+if(NOT MSVC)
+  target_compile_options(v4link_errors_test PRIVATE -fexceptions)
+endif()
+add_test(NAME v4link_errors_test COMMAND v4link_errors_test)
+
 # ============================================================================
 # Minimal binary for size measurement
 # ============================================================================

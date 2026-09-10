@@ -396,13 +396,13 @@ TEST_CASE("Link with task system integration")
     REQUIRE(err == 0);
 
     // Execute multiple bytecodes
-    const uint8_t code1[] = {0x20, 0x00, 0x00, 0x2A, 0x51};  // LIT 42, RET
-    const uint8_t code2[] = {0x20, 0x00, 0x00, 0x64, 0x51};  // LIT 100, RET
+    const uint8_t code1[] = {0x00, 42, 0x00, 0x00, 0x00, 0x51};   // LIT 42, RET
+    const uint8_t code2[] = {0x00, 100, 0x00, 0x00, 0x00, 0x51};  // LIT 100, RET
 
     for (const auto* code : {code1, code2})
     {
       std::vector<uint8_t> exec_frame;
-      internal::encode_frame(Command::EXEC, code, 5, exec_frame);
+      internal::encode_frame(Command::EXEC, code, sizeof(code1), exec_frame);
 
       uart_output.clear();
       for (const uint8_t byte : exec_frame)
@@ -414,6 +414,13 @@ TEST_CASE("Link with task system integration")
       REQUIRE(uart_output.size() == 8);
       CHECK(uart_output[3] == static_cast<uint8_t>(ErrorCode::OK));
     }
+
+    CHECK(vm_ds_depth_public(vm) == 2);
+    v4_i32 value = 0;
+    REQUIRE(vm_ds_pop(vm, &value) == V4_OK);
+    CHECK(value == 100);
+    REQUIRE(vm_ds_pop(vm, &value) == V4_OK);
+    CHECK(value == 42);
 
     // Cleanup task system before destroying VM
     vm_task_cleanup(vm);

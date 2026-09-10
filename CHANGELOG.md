@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-10
+
+### Added
+- VM_ERROR responses carry the original engine error as a signed little-endian i32. Legacy status codes and success frames remain unchanged.
+- Regression coverage for raw/.v4b execution failures, registration failures, query errors and continued command handling.
+
+### Fixed
+- Propagate vm_exec errors instead of acknowledging failed execution as OK.
+- Preserve registration and query error numbers; memory read failures no longer silently return zero-filled data.
+- Failure payloads contain no word indices. VM state is not rolled back by error reporting.
+- Correct invalid bytecode in the task-enabled execution regression test, previously hidden by unconditional OK responses.
+- Advance from the existing v0.4.0 tag rather than reusing the stale 0.3.1 CMake version.
+
 ## [0.3.1] - 2025-11-05
 
 ### Added

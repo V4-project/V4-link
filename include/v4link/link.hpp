@@ -137,6 +137,7 @@ class Link
    * @param data_len Payload length in bytes (0 for standard response)
    */
   void send_ack(ErrorCode code, const uint8_t* data = nullptr, size_t data_len = 0);
+  void send_vm_error(v4_err error);
 
   /**
    * @brief Handle CMD_EXEC command

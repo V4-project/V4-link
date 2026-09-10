@@ -371,7 +371,7 @@ void Link::handle_cmd_exec()
         if (wid < 0)
         {
           bytecode_storage_.pop_back();
-          send_ack(ErrorCode::VM_ERROR);
+          send_vm_error(wid);
           return;
         }
 
@@ -413,7 +413,7 @@ void Link::handle_cmd_exec()
     if (main_wid < 0)
     {
       bytecode_storage_.pop_back();
-      send_ack(ErrorCode::VM_ERROR);
+      send_vm_error(main_wid);
       return;
     }
 
@@ -421,9 +421,16 @@ void Link::handle_cmd_exec()
 
     // Execute main bytecode
     Word* entry = vm_get_word(vm_, main_wid);
-    if (entry)
+    if (!entry)
     {
-      vm_exec(vm_, entry);
+      send_vm_error(V4_ERR(InvalidWordIdx));
+      return;
+    }
+    const v4_err result = vm_exec(vm_, entry);
+    if (result != V4_OK)
+    {
+      send_vm_error(result);
+      return;
     }
 
     // Return all word indices
@@ -448,14 +455,21 @@ void Link::handle_cmd_exec()
     if (wid < 0)
     {
       bytecode_storage_.pop_back();
-      send_ack(ErrorCode::VM_ERROR);
+      send_vm_error(wid);
       return;
     }
 
     Word* entry = vm_get_word(vm_, wid);
-    if (entry)
+    if (!entry)
     {
-      vm_exec(vm_, entry);
+      send_vm_error(V4_ERR(InvalidWordIdx));
+      return;
+    }
+    const v4_err result = vm_exec(vm_, entry);
+    if (result != V4_OK)
+    {
+      send_vm_error(result);
+      return;
     }
 
     uint8_t response_data[3];
@@ -487,7 +501,7 @@ void Link::handle_cmd_query_stack()
   int ds_depth = vm_ds_depth_public(vm_);
   if (ds_depth < 0)
   {
-    send_ack(ErrorCode::VM_ERROR);
+    send_vm_error(ds_depth);
     return;
   }
 
@@ -498,6 +512,11 @@ void Link::handle_cmd_query_stack()
   {
     v4_i32 ds_data[256];
     int ds_count = vm_ds_copy_to_array(vm_, ds_data, 256);
+    if (ds_count < 0)
+    {
+      send_vm_error(ds_count);
+      return;
+    }
     for (int i = 0; i < ds_count; ++i)
     {
       // Little-endian i32
@@ -512,7 +531,7 @@ void Link::handle_cmd_query_stack()
   int rs_depth = vm_rs_depth_public(vm_);
   if (rs_depth < 0)
   {
-    send_ack(ErrorCode::VM_ERROR);
+    send_vm_error(rs_depth);
     return;
   }
 
@@ -523,6 +542,11 @@ void Link::handle_cmd_query_stack()
   {
     v4_i32 rs_data[64];
     int rs_count = vm_rs_copy_to_array(vm_, rs_data, 64);
+    if (rs_count < 0)
+    {
+      send_vm_error(rs_count);
+      return;
+    }
     for (int i = 0; i < rs_count; ++i)
     {
       // Little-endian i32
@@ -566,10 +590,11 @@ void Link::handle_cmd_query_memory()
   {
     uint32_t offset = addr + i;
     v4_u32 value = 0;
-    if (vm_mem_read32(vm_, offset, &value) != V4_OK)
+    const v4_err result = vm_mem_read32(vm_, offset, &value);
+    if (result != V4_OK)
     {
-      // On error, return zeros
-      value = 0;
+      send_vm_error(result);
+      return;
     }
 
     // Add up to 4 bytes (handle partial read at end)
@@ -600,7 +625,7 @@ void Link::handle_cmd_query_word()
   Word* word = vm_get_word(vm_, word_idx);
   if (!word)
   {
-    send_ack(ErrorCode::VM_ERROR);
+    send_vm_error(V4_ERR(InvalidWordIdx));
     return;
   }
 
@@ -639,6 +664,15 @@ void Link::handle_cmd_query_word()
   }
 
   send_ack(ErrorCode::OK, response_data.data(), response_data.size());
+}
+
+void Link::send_vm_error(v4_err error)
+{
+  const uint32_t value = static_cast<uint32_t>(error);
+  const uint8_t data[] = {static_cast<uint8_t>(value), static_cast<uint8_t>(value >> 8),
+                          static_cast<uint8_t>(value >> 16),
+                          static_cast<uint8_t>(value >> 24)};
+  send_ack(ErrorCode::VM_ERROR, data, sizeof(data));
 }
 
 void Link::send_ack(ErrorCode code, const uint8_t* data, size_t data_len)

@@ -80,7 +80,8 @@ enum class Command : uint8_t
    * DATA contains raw V4 bytecode to be executed immediately.
    * VM registers the bytecode as an anonymous word and executes it.
    *
-   * Response: ACK with ERR_OK (0x00) on success, or error code on failure
+   * Response: ACK with ERR_OK (0x00) on success. VM failures return VM_ERROR
+   * with the original signed 32-bit engine error in little-endian DATA.
    */
   EXEC = 0x10,
 
@@ -173,6 +174,15 @@ enum class ErrorCode : uint8_t
 
 /**
  * @brief Response frame format
+ *
+ * VM failure response (EXEC or query, since 0.5.0):
+ * [STX][05][00][VM_ERROR=04][V4_ERR:i32 little-endian][CRC8]
+ * The engine error number comes from V4-engine errors.def. No word indices
+ * are included on failure. Older devices may send VM_ERROR without DATA.
+ * Success and transport error formats are unchanged.
+ * Errors do not roll back VM stacks, memory, or registered words. Applications
+ * may inspect the state or send RESET before retrying.
+ * A negative SYS result on the data stack is not a VM execution error.
  *
  * Standard response (PING, RESET):
  * [STX][0x01][0x00][ERR_CODE][CRC8]

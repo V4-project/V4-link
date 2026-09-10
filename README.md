@@ -11,7 +11,7 @@ V4-link provides a minimal communication protocol for transferring compiled byte
 - **Minimal footprint**: ~1.5KB Flash, ~0.5KB RAM (typical)
 - **Platform-agnostic**: No UART dependencies in core library
 - **Simple protocol**: Frame-based with CRC-8 error detection
-- **Zero runtime allocation**: Memory allocated only during initialization
+- **Dynamic buffers**: Uses STL containers for frame and response handling; allocation-free execution is not guaranteed
 - **No exceptions**: Safe for embedded environments
 - **C++17**: Modern C++ with strict size optimization
 
@@ -53,6 +53,9 @@ CRC8   = Checksum (polynomial 0x07)
 
 - **0x10 EXEC**: Execute bytecode
 - **0x20 PING**: Connection check
+- **0x30 QUERY_STACK**: Query stack state
+- **0x40 QUERY_MEMORY**: Query memory
+- **0x50 QUERY_WORD**: Query word information
 - **0xFF RESET**: Full VM reset
 
 ### Response Codes
